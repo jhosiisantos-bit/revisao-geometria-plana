@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desafio ENEM: Geometria Espacial</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                        display: ['Outfit', 'sans-serif'],
+                    },
+                    colors: {
+                        enem: {
+                            dark: '#0B0F19',
+                            card: '#1E293B',
+                            indigo: '#6366F1',
+                            amber: '#F59E0B',
+                            emerald: '#10B981',
+                            rose: '#F43F5E',
+                            cyan: '#06B6D4'
+                        }
+                    },
+                    animation: {
+                        'pulse-glow': 'pulseGlow 2s infinite',
+                        'star-pop': 'starPop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
+                        'float': 'float 3s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        pulseGlow: {
+                            '0%, 100%': { boxShadow: '0 0 15px rgba(99, 102, 241, 0.4)' },
+                            '50%': { boxShadow: '0 0 30px rgba(99, 102, 241, 0.8)' },
+                        },
+                        starPop: {
+                            '0%': { transform: 'scale(0) rotate(-45deg)', opacity: '0' },
+                            '100%': { transform: 'scale(1) rotate(0deg)', opacity: '1' }
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-6px)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #0B0F19;
+            color: #F8FAFC;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.75);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .glass-card-hover {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-card-hover:hover {
+            border-color: rgba(99, 102, 241, 0.5);
+            box-shadow: 0 12px 30px -8px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-option {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            min-height: 64px;
+        }
+        
+        .btn-option:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px -4px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-option:active {
+            transform: translateY(1px);
+        }
+
+        /* Scrollbar customizado */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0F172A;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between font-sans antialiased selection:bg-indigo-500 selection:text-white">
+
+    <!-- Canvas para Confetes da Tela Final -->
+    <canvas id="confettiCanvas" class="fixed inset-0 pointer-events-none z-50"></canvas>
+
+    <!-- Cabeçalho Principal -->
+    <header class="w-full bg-slate-900/90 border-b border-slate-800 backdrop-blur-md sticky top-0 z-40 px-4 py-3">
+        <div class="max-w-5xl mx-auto flex items-center justify-between gap-4">
+            <!-- Logo / Título -->
+            <div class="flex items-center gap-3 cursor-pointer" onclick="renderStartScreen()">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-amber-400 flex items-center justify-center font-display font-black text-xl text-slate-950 shadow-lg shadow-indigo-500/30">
+                    3D
+                </div>
+                <div>
+                    <h1 class="font-display font-black text-lg sm:text-xl leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-indigo-300">
+                        Geometria Espacial <span class="text-xs bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-bold ml-1">ENEM 3ª Série</span>
+                    </h1>
+                    <p class="text-xs text-slate-400 hidden sm:block">Revisão Interativa com a Profe de Matemática</p>
+                </div>
+            </div>
+
+            <!-- Controles Globais / Status -->
+            <div class="flex items-center gap-3">
+                <!-- Botão Áudio -->
+                <button id="soundToggleBtn" onclick="toggleSound()" title="Alternar Efeitos Sonoros" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors border border-slate-700 flex items-center gap-1.5 text-xs font-semibold">
+                    <span id="soundIcon">🔊</span>
+                    <span class="hidden sm:inline" id="soundLabel">Som: ON</span>
+                </button>
+
+                <!-- Placar de Pontos e Combo -->
+                <div class="flex items-center gap-3 bg-slate-950 px-3.5 py-1.5 rounded-xl border border-slate-800">
+                    <div class="text-center">
+                        <span class="block text-[9px] text-slate-400 uppercase font-bold tracking-wider">Pontos</span>
+                        <span id="globalScore" class="font-display font-black text-amber-400 text-base leading-none">0</span>
+                    </div>
+                    <div class="w-px h-6 bg-slate-800"></div>
+                    <div class="text-center">
+                        <span class="block text-[9px] text-slate-400 uppercase font-bold tracking-wider">Combo</span>
+                        <span id="globalStreak" class="font-display font-black text-emerald-400 text-base leading-none">🔥 0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Conteúdo Dinâmico (Telas: Início, Quiz, Vitória) -->
+    <main id="appContainer" class="flex-grow max-w-5xl w-full mx-auto p-4 sm:p-6 flex flex-col justify-center">
+        <!-- Injetado dinamicamente via JavaScript -->
+    </main>
+
+    <!-- Rodapé -->
+    <footer class="w-full text-center py-4 text-xs text-slate-500 border-t border-slate-800/60 bg-slate-950/50">
+        <p>Material Didático de Matemática • 3ª Série do Ensino Médio • Foco nas Matrizes de Referência do ENEM</p>
+    </footer>
+
+    <!-- MODAL DE GABARITO / RESOLUÇÃO DA PROFE -->
+    <div id="feedbackModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="max-w-lg w-full bg-slate-900 border border-slate-700 rounded-3xl p-6 shadow-2xl space-y-4 animate-bounce-short">
+            <div id="feedbackHeader" class="flex items-center gap-3">
+                <!-- Preenchido via JS -->
+            </div>
+            <div id="feedbackBody" class="text-sm text-slate-300 leading-relaxed space-y-3 bg-slate-950/70 p-4 rounded-2xl border border-slate-800">
+                <!-- Resolução comentada da Profe -->
+            </div>
+            <button id="nextBtn" onclick="nextQuestion()" class="w-full py-4 rounded-2xl font-display font-bold text-base text-slate-950 bg-gradient-to-r from-amber-400 via-yellow-300 to-emerald-400 hover:brightness-110 shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-2">
+                <span>Continuar para a Próxima</span>
+                <svg class="w-5 h-5 stroke-slate-950 stroke-[3]" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL DE DICA DA PROFE (FÓRMULAS & PEGADINHAS ENEM) -->
+    <div id="hintModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="max-w-md w-full bg-slate-900 border border-indigo-500/40 rounded-3xl p-6 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="flex items-center gap-2 text-indigo-400 font-display font-extrabold text-lg">
+                    <span>👩‍🏫 Dica da Profe & Fórmulas ENEM</span>
+                </div>
+                <button onclick="closeHintModal()" class="text-slate-400 hover:text-white text-xl font-bold p-1">&times;</button>
+            </div>
+            <div id="hintContent" class="text-sm text-slate-300 leading-relaxed space-y-2 bg-slate-950/50 p-4 rounded-2xl border border-slate-800/80">
+                <!-- Dica injetada dinamicamente -->
+            </div>
+            <button onclick="closeHintModal()" class="w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition-colors">
+                Entendi! Voltar para o Desafio
+            </button>
+        </div>
+    </div>
+
+    <script>
+        /* ==========================================================================
+           1. BANCO DE DADOS DAS 3 FASES (15 QUESTÕES DIDÁTICAS COMPLETA)
+           ========================================================================== */
+        const gameData = {
+            phases: [
+                {
+                    id: 1,
+                    title: "Fase 1: Visão Espacial, Projeções e Euler",
+                    subtitle: "Foco em Relação de Euler, Vistas Ortogonais e Planificação de Sólidos",
+                    badgeColor: "from-blue-500 to-cyan-400",
+                    questions: [
+                        {
+                            id: "p1_q1",
+                            category: "Relação de Euler",
+                            question: "Um poliedro convexo possui 12 vértices (V) e 30 arestas (A). Utilizando a Relação de Euler (V - A + F = 2), quantas FACES (F) esse sólido possui?",
+                            options: [
+                                "16 faces",
+                                "18 faces",
+                                "20 faces",
+                                "22 faces"
+                            ],
+                            correct: 2,
+                            hint: "<b>Fórmula de Euler:</b> V - A + F = 2.<br>Substitua V = 12 e A = 30:<br>12 - 30 + F = 2  ⇒  -18 + F = 2  ⇒  F = 20.",
+                            explanation: "<b>Resolução da Profe:</b><br>Aplicando a Relação de Euler para poliedros convexos:<br><span class='text-amber-400 font-bold'>V - A + F = 2</span><br>12 - 30 + F = 2<br>-18 + F = 2  ⇒  <b>F = 20 faces</b>.<br><i>Curiosidade ENEM: Esse poliedro regular de 20 faces triangulares é o Icosaedro!</i>",
+                            svgType: "icosahedron"
+                        },
+                        {
+                            id: "p1_q2",
+                            category: "Projeções Ortogonais",
+                            question: "Um cone reto está apoiado pela base circular em uma mesa plana. Se observarmos esse sólido exatamente de cima para baixo (Projeção Ortogonal Superior), o que visualizaremos?",
+                            options: [
+                                "Um triângulo isósceles",
+                                "Um retângulo centralizado",
+                                "Um círculo com um ponto demarcando o vértice central",
+                                "Uma elipse perfeita"
+                            ],
+                            correct: 2,
+                            hint: "Na vista ortogonal de cima, o contorno externo projeta o contorno circular da base, e o vértice do topo do cone se projeta bem no centro.",
+                            explanation: "<b>Resolução da Profe:</b><br>Na projeção ortogonal superior (vista de cima), o contorno da base circular gera a circunferência e o vértice (ponto mais alto) projeta-se exatamente no centro da base.<br>Portanto, vemos um <b>círculo com ponto central</b>.",
+                            svgType: "coneView"
+                        },
+                        {
+                            id: "p1_q3",
+                            category: "Planificação de Sólidos",
+                            question: "Ao planificarmos a superfície lateral de um CONE circular reto de geratriz 'g', obtemos qual figura geométrica plana?",
+                            options: [
+                                "Um retângulo",
+                                "Um setor circular",
+                                "Um trapézio isósceles",
+                                "Um triângulo equilátero"
+                            ],
+                            correct: 1,
+                            hint: "Pense no formato do chapéu de festa de aniversário quando você o abre completamente. A lateral vira uma 'fatia de pizza' (setor circular).",
+                            explanation: "<b>Resolução da Profe:</b><br>Ao 'desenrolar' a casquinha do cone, sua superfície lateral se transforma em um <b>setor circular</b>, cujo raio é a geratriz (g) do cone e o comprimento do arco é o perímetro da base ($2\\pi r$).",
+                            svgType: "coneNet"
+                        },
+                        {
+                            id: "p1_q4",
+                            category: "Sólidos de Revolução",
+                            question: "(ENEM) Ao rotacionarmos 360° um triângulo retângulo em torno de um dos seus catetos, qual sólido geométrico tridimensional é gerado no espaço?",
+                            options: [
+                                "Esfera",
+                                "Cilindro reto",
+                                "Cone de revolução",
+                                "Pirâmide triangular"
+                            ],
+                            correct: 2,
+                            hint: "A rotação de um retângulo gera um cilindro. A rotação de um triângulo retângulo 'varre' a hipotenusa gerando a geratriz de um cone.",
+                            explanation: "<b>Resolução da Profe:</b><br>Os sólidos de revolução são formados por rotações 360° de figuras planas:<br>• Retângulo ⇒ Cilindro<br>• Semicírculo ⇒ Esfera<br>• Triângulo Retângulo em torno do cateto ⇒ <b>Cone de Revolução</b>.",
+                            svgType: "revolution"
+                        },
+                        {
+                            id: "p1_q5",
+                            category: "Elementos Poliedrais",
+                            question: "O dado tradicional de 6 faces quadradas é um Hexaedro Regular (Cubo). Qual é a contagem exata do seu número de Vértices (V), Arestas (A) e Faces (F)?",
+                            options: [
+                                "V = 6, A = 12, F = 8",
+                                "V = 8, A = 12, F = 6",
+                                "V = 12, A = 8, F = 6",
+                                "V = 8, A = 10, F = 6"
+                            ],
+                            correct: 1,
+                            hint: "O cubo possui 4 vértices na tampa superior e 4 na base (V=8). Possui 4 arestas em cima, 4 embaixo e 4 verticais (A=12). E 6 faces quadradas.",
+                            explanation: "<b>Resolução da Profe:</b><br>O cubo tem exatamente <b>8 vértices</b>, <b>12 arestas</b> e <b>6 faces</b>.<br>Testando a Relação de Euler: 8 - 12 + 6 = 2 (Verdadeiro!).",
+                            svgType: "cube"
+                        }
+                    ]
+                },
+                {
+                    id: 2,
+                    title: "Fase 2: Áreas, Volumes e Conversão de Litros",
+                    subtitle: "Cilindros, Prismas, Pirâmides, Cones, Esferas e equivalências m³, dm³ e Litros",
+                    badgeColor: "from-amber-500 to-orange-400",
+                    questions: [
+                        {
+                            id: "p2_q1",
+                            category: "Cilindro & Conversão de Unidades",
+                            question: "Um reservatório de água cilíndrico possui raio r = 1 m e altura h = 2 m. Adotando π = 3, qual a capacidade TOTAL desse reservatório em LITROS? (Dado: 1 m³ = 1000 Litros)",
+                            options: [
+                                "3.000 Litros",
+                                "5.000 Litros",
+                                "6.000 Litros",
+                                "12.000 Litros"
+                            ],
+                            correct: 2,
+                            hint: "1. Volume do Cilindro: V = π · r² · h.<br>2. V = 3 · (1)² · 2 = 6 m³.<br>3. Converta: 6 m³ × 1000 = 6.000 L.",
+                            explanation: "<b>Resolução da Profe:</b><br>1º) Volume do Cilindro: $V = \\pi \\cdot r^2 \\cdot h$<br>$V = 3 \\cdot (1)^2 \\cdot 2 = 6 \\text{ m}^3$.<br>2º) Conversão indispensável no ENEM: $1 \\text{ m}^3 = 1000 \\text{ L}$.<br>$6 \\times 1000 = \\mathbf{6.000 \\text{ Litros}}$.",
+                            svgType: "cylinderTank"
+                        },
+                        {
+                            id: "p2_q2",
+                            category: "Volume da Pirâmide",
+                            question: "Uma estrutura em formato de pirâmide regular de base quadrada possui lado da base a = 6 m e altura h = 5 m. Qual é o volume interno dessa pirâmide?",
+                            options: [
+                                "30 m³",
+                                "60 m³",
+                                "90 m³",
+                                "180 m³"
+                            ],
+                            correct: 1,
+                            hint: "Fórmula de sólidos 'bicudos' (Pirâmide e Cone): V = (1/3) · Área da Base · altura.<br>Área da base quadrada = 6 × 6 = 36 m².",
+                            explanation: "<b>Resolução da Profe:</b><br>Área da Base (A_b) = $6^2 = 36 \\text{ m}^2$.<br>Volume da Pirâmide: $V = \\frac{1}{3} \\cdot A_b \\cdot h$<br>$V = \\frac{1}{3} \\cdot 36 \\cdot 5 = 12 \\cdot 5 = \\mathbf{60 \\text{ m}^3}$.",
+                            svgType: "pyramid"
+                        },
+                        {
+                            id: "p2_q3",
+                            category: "Volume da Esfera",
+                            question: "Uma sobremesa esférica possui raio r = 3 cm. Utilizando a aproximação π = 3, calcule o volume total dessa esfera.",
+                            options: [
+                                "36 cm³",
+                                "72 cm³",
+                                "108 cm³",
+                                "144 cm³"
+                            ],
+                            correct: 2,
+                            hint: "Fórmula do Volume da Esfera: V = (4/3) · π · r³.<br>Substitua π = 3 e r = 3: V = (4/3) · 3 · (3³).",
+                            explanation: "<b>Resolução da Profe:</b><br>Volume da Esfera: $V = \\frac{4}{3} \\cdot \\pi \\cdot r^3$<br>Substituindo os valores:<br>$V = \\frac{4}{3} \\cdot 3 \\cdot (3^3) = 4 \\cdot 27 = \\mathbf{108 \\text{ cm}^3}$.",
+                            svgType: "sphere"
+                        },
+                        {
+                            id: "p2_q4",
+                            category: "Área Lateral do Cone",
+                            question: "Um chapéu cônico possui raio da base r = 5 cm e geratriz g = 12 cm. Adotando π = 3,1, qual a área de material necessária para fazer apenas a superfície lateral desse chapéu?",
+                            options: [
+                                "150 cm²",
+                                "186 cm²",
+                                "220 cm²",
+                                "300 cm²"
+                            ],
+                            correct: 1,
+                            hint: "Área lateral do cone: A_L = π · r · g.<br>Substitua os dados: A_L = 3,1 × 5 × 12.",
+                            explanation: "<b>Resolução da Profe:</b><br>A área lateral de um cone é calculada por:<br><span class='text-amber-400 font-bold'>A_L = π · r · g</span><br>$A_L = 3,1 \\cdot 5 \\cdot 12 = 3,1 \\cdot 60 = \\mathbf{186 \\text{ cm}^2}$.",
+                            svgType: "coneHat"
+                        },
+                        {
+                            id: "p2_q5",
+                            category: "Prisma Retangular & Porcentagem",
+                            question: "Uma caixa d'água retangular tem dimensões de 2 m (comprimento), 1,5 m (largura) e 1 m (profundidade). Se ela está preenchida até 80% de sua capacidade, quantos LITROS de água estão nela?",
+                            options: [
+                                "1.800 Litros",
+                                "2.400 Litros",
+                                "3.000 Litros",
+                                "3.600 Litros"
+                            ],
+                            correct: 1,
+                            hint: "1. Volume Total = 2 × 1,5 × 1 = 3 m³ = 3.000 Litros.<br>2. Calcule 80% de 3.000 Litros (0,8 × 3000).",
+                            explanation: "<b>Resolução da Profe:</b><br>1º) Volume Total = $2 \\cdot 1,5 \\cdot 1 = 3 \\text{ m}^3 = 3.000 \\text{ L}$.<br>2º) 80% da capacidade = $0,80 \\times 3.000 = \\mathbf{2.400 \\text{ Litros}}$.",
+                            svgType: "prismBox"
+                        }
+                    ]
+                },
+                {
+                    id: 3,
+                    title: "Fase 3: Desafios Contextualizados ENEM",
+                    subtitle: "Razão de Volume em Escala k³, Deslocamento de Fluido, Troncos e Embalagens",
+                    badgeColor: "from-emerald-500 to-teal-400",
+                    questions: [
+                        {
+                            id: "p3_q1",
+                            category: "Escala Tridimensional (k³)",
+                            question: "(ENEM) A maquete de um reservatório foi construída na escala linear de 1 : 20. Se a maquete comporta exatamente 0,5 Litro (500 mL), qual a capacidade REAL do reservatório original?",
+                            options: [
+                                "10 Litros",
+                                "100 Litros",
+                                "4.000 Litros",
+                                "8.000 Litros"
+                            ],
+                            correct: 2,
+                            hint: "Pegadinha clássica do ENEM! A razão entre VOLUMES é o CUBO da escala linear: V_real / V_maquete = k³.<br>k = 20 ⇒ k³ = 20³ = 8.000.<br>V_real = 0,5 L × 8.000.",
+                            explanation: "<b>Resolução da Profe:</b><br>Atenção à regra de escala do ENEM:<br>• Escala de comprimento = $k$<br>• Escala de área = $k^2$<br>• Escala de volume = $k^3 = 20^3 = 8.000$.<br>Volume Real = $0,5 \\text{ L} \\times 8.000 = \\mathbf{4.000 \\text{ Litros}}$.",
+                            svgType: "scaleCube"
+                        },
+                        {
+                            id: "p3_q2",
+                            category: "Princípio de Deslocamento de Água",
+                            question: "Um aquário retangular com base de 40 cm × 30 cm contém água. Ao mergulhar totalmente uma pedra decorativa, o nível da água sobe 3 cm sem transbordar. Qual o volume da pedra?",
+                            options: [
+                                "1.200 cm³",
+                                "2.400 cm³",
+                                "3.600 cm³",
+                                "4.800 cm³"
+                            ],
+                            correct: 2,
+                            hint: "O volume de um objeto irregular submerso é exatamente igual ao volume de líquido que ele faz subir (Δh):<br>V_objeto = Área da base × variação da altura (Δh).",
+                            explanation: "<b>Resolução da Profe:</b><br>Pelo Princípio de Arquimedes e Geometria Prática:<br>Volume Deslocado = Área da base × elevação da altura (Δh)<br>$V = 40 \\cdot 30 \\cdot 3 = \\mathbf{3.600 \\text{ cm}^3}$.",
+                            svgType: "displacement"
+                        },
+                        {
+                            id: "p3_q3",
+                            category: "Tronco de Cone",
+                            question: "Um copo descartável tem formato de tronco de cone com raio menor r = 3 cm, raio maior R = 5 cm e altura h = 9 cm. Usando a fórmula V = (π·h/3)·(R² + R·r + r²) e π = 3, qual a capacidade do copo?",
+                            options: [
+                                "351 cm³",
+                                "441 cm³",
+                                "512 cm³",
+                                "600 cm³"
+                            ],
+                            correct: 1,
+                            hint: "Substitua na fórmula fornecida:<br>π = 3, h = 9  ⇒  (3 × 9 / 3) = 9.<br>Dentro do parêntese: R² + R·r + r² = 5² + (5×3) + 3² = 25 + 15 + 9 = 49.<br>V = 9 × 49.",
+                            explanation: "<b>Resolução da Profe:</b><br>Substituindo os valores na fórmula do Tronco:<br>$V = \\frac{3 \\cdot 9}{3} \\cdot (5^2 + 5\\cdot 3 + 3^2)$<br>$V = 9 \\cdot (25 + 15 + 9) = 9 \\cdot 49 = \\mathbf{441 \\text{ cm}^3}$ (ou 441 mL).",
+                            svgType: "frustum"
+                        },
+                        {
+                            id: "p3_q4",
+                            category: "Comparação de Embalagens",
+                            question: "Uma fábrica produz suco em duas lata cilíndricas: Embalagem A (raio R, altura H) e Embalagem B (dobro do raio 2R, metade da altura H/2). Qual a relação entre os volumes V_B e V_A?",
+                            options: [
+                                "V_B é igual a V_A",
+                                "V_B é o dobro de V_A (V_B = 2 · V_A)",
+                                "V_B é o quádruplo de V_A",
+                                "V_B é a metade de V_A"
+                            ],
+                            correct: 1,
+                            hint: "No volume do cilindro (V = π · r² · h), o raio fica elevado ao quadrado! Dobrar o raio multiplica o volume por 4. Reduzir a altura pela metade divide por 2.",
+                            explanation: "<b>Resolução da Profe:</b><br>$V_A = \\pi \\cdot R^2 \\cdot H$<br>$V_B = \\pi \\cdot (2R)^2 \\cdot \\left(\\frac{H}{2}\\right) = \\pi \\cdot 4R^2 \\cdot \\frac{H}{2} = 2 \\cdot (\\pi R^2 H) = \\mathbf{2 \\cdot V_A}$.<br>Logo, a embalagem B comporta o <b>dobro</b> do volume!",
+                            svgType: "cylindersCompare"
+                        },
+                        {
+                            id: "p3_q5",
+                            category: "Sólidos Compostos (Silo Agrícola)",
+                            question: "Um silo agrícola é composto por um cilindro reto acoplado a um cone reto embaixo. O cilindro tem volume V_cilindro = 60 m³. Se o cone possui a MESMA base e a MESMA altura do cilindro, qual é o VOLUME TOTAL do silo?",
+                            options: [
+                                "70 m³",
+                                "80 m³",
+                                "90 m³",
+                                "120 m³"
+                            ],
+                            correct: 1,
+                            hint: "Propriedade clássica do ENEM: O volume do cone é exatamente 1/3 do volume do cilindro de mesma base e mesma altura.<br>V_cone = 60 / 3 = 20 m³.<br>V_total = 60 + 20.",
+                            explanation: "<b>Resolução da Profe:</b><br>Como o cone tem a mesma base e mesma altura do cilindro:<br>$V_{\\text{cone}} = \\frac{1}{3} \\cdot V_{\\text{cilindro}} = \\frac{60}{3} = 20 \\text{ m}^3$.<br>Volume Total do Silo = $60 + 20 = \\mathbf{80 \\text{ m}^3}$.",
+                            svgType: "silo"
+                        }
+                    ]
+                }
+            ]
+        };
+
+        /* ==========================================================================
+           2. SÍNTESE DE ÁUDIO WEB AUDIO API (SEM DEPENDÊNCIAS EXTERNAS)
+           ========================================================================== */
+        class SoundEngine {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    if (AudioCtx) this.ctx = new AudioCtx();
+                }
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            playCorrect() {
+                if (!this.enabled) return;
+                this.init();
+                if (!this.ctx) return;
+
+                const now = this.ctx.currentTime;
+                const osc1 = this.ctx.createOscillator();
+                const osc2 = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc1.type = 'sine';
+                osc2.type = 'triangle';
+
+                // Arpejo alegre C5 (523Hz) -> E5 (659Hz) -> G5 (784Hz)
+                osc1.frequency.setValueAtTime(523.25, now);
+                osc1.frequency.setValueAtTime(659.25, now + 0.08);
+                osc1.frequency.setValueAtTime(783.99, now + 0.16);
+
+                osc2.frequency.setValueAtTime(261.63, now);
+                osc2.frequency.setValueAtTime(329.63, now + 0.08);
+                osc2.frequency.setValueAtTime(392.00, now + 0.16);
+
+                gain.gain.setValueAtTime(0.18, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+
+                osc1.connect(gain);
+                osc2.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc1.start(now);
+                osc2.start(now);
+                osc1.stop(now + 0.45);
+                osc2.stop(now + 0.45);
+            }
+
+            playIncorrect() {
+                if (!this.enabled) return;
+                this.init();
+                if (!this.ctx) return;
+
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, now);
+                osc.frequency.exponentialRampToValueAtTime(100, now + 0.28);
+
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start(now);
+                osc.stop(now + 0.28);
+            }
+
+            playVictory() {
+                if (!this.enabled) return;
+                this.init();
+                if (!this.ctx) return;
+
+                const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+                notes.forEach((freq, idx) => {
+                    const now = this.ctx.currentTime + (idx * 0.12);
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now);
+
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+
+                    osc.start(now);
+                    osc.stop(now + 0.35);
+                });
+            }
+        }
+
+        const audio = new SoundEngine();
+
+        function toggleSound() {
+            audio.enabled = !audio.enabled;
+            document.getElementById('soundIcon').innerText = audio.enabled ? "🔊" : "🔇";
+            document.getElementById('soundLabel').innerText = audio.enabled ? "Som: ON" : "Som: OFF";
+        }
+
+        /* ==========================================================================
+           3. ESTADO DA APLICAÇÃO
+           ========================================================================== */
+        let state = {
+            currentPhaseIdx: 0,
+            currentQuestionIdx: 0,
+            score: 0,
+            streak: 0,
+            correctCount: 0,
+            wrongCount: 0,
+            answersHistory: []
+        };
+
+        /* ==========================================================================
+           4. DESENHOS SVG VETORIAIS 3D PERSONALIZADOS PARA CADA QUESTÃO
+           ========================================================================== */
+        function getSVGGraphic(type) {
+            const baseClass = "w-full h-44 sm:h-52 object-contain mx-auto drop-shadow-lg";
+            switch (type) {
+                case "icosahedron":
+                    return `<svg class="${baseClass}" viewBox="0 0 200 200" fill="none">
+                        <polygon points="100,20 170,60 170,140 100,180 30,140 30,60" stroke="#818CF8" stroke-width="3" fill="rgba(99, 102, 241, 0.15)"/>
+                        <line x1="100" y1="20" x2="100" y2="180" stroke="#6366F1" stroke-width="2" stroke-dasharray="4"/>
+                        <polygon points="30,60 170,60 100,110" stroke="#A5B4FC" stroke-width="2" fill="rgba(165, 180, 252, 0.25)"/>
+                        <polygon points="30,140 170,140 100,110" stroke="#A5B4FC" stroke-width="2" fill="rgba(165, 180, 252, 0.15)"/>
+                        <circle cx="100" cy="20" r="5" fill="#F43F5E"/>
+                        <circle cx="170" cy="60" r="5" fill="#F43F5E"/>
+                        <circle cx="170" cy="140" r="5" fill="#F43F5E"/>
+                        <circle cx="100" cy="180" r="5" fill="#F43F5E"/>
+                        <circle cx="30" cy="140" r="5" fill="#F43F5E"/>
+                        <circle cx="30" cy="60" r="5" fill="#F43F5E"/>
+                        <text x="110" y="30" fill="#F43F5E" font-size="12" font-weight="bold">Vértices (V)</text>
+                    </svg>`;
+
+                case "coneView":
+                    return `<svg class="${baseClass}" viewBox="0 0 220 160">
+                        <g transform="translate(20, 15)">
+                            <text x="15" y="10" fill="#94A3B8" font-size="10" font-weight="bold">VISTA FRONTAL</text>
+                            <path d="M 10 110 L 50 25 L 90 110 Z" fill="rgba(99, 102, 241, 0.2)" stroke="#6366F1" stroke-width="2.5"/>
+                            <ellipse cx="50" cy="110" rx="40" ry="10" fill="rgba(99, 102, 241, 0.4)" stroke="#6366F1" stroke-width="2"/>
+                        </g>
+                        <path d="M 115 70 L 135 70 M 130 65 L 135 70 L 130 75" stroke="#F59E0B" stroke-width="3" stroke-linecap="round"/>
+                        <g transform="translate(140, 15)">
+                            <text x="10" y="10" fill="#38BDF8" font-size="10" font-weight="bold">VISTA SUPERIOR</text>
+                            <circle cx="50" cy="65" r="35" fill="rgba(56, 189, 248, 0.2)" stroke="#38BDF8" stroke-width="3"/>
+                            <circle cx="50" cy="65" r="4.5" fill="#F43F5E"/>
+                            <text x="35" y="115" fill="#38BDF8" font-size="10" font-weight="bold">Círculo + Ápice</text>
+                        </g>
+                    </svg>`;
+
+                case "coneNet":
+                    return `<svg class="${baseClass}" viewBox="0 0 200 160">
+                        <path d="M 100 20 L 40 100 A 70 70 0 0 0 160 100 Z" fill="rgba(245, 158, 11, 0.2)" stroke="#F59E0B" stroke-width="3"/>
+                        <text x="80" y="70" fill="#F59E0B" font-size="11" font-weight="bold">Geratriz (g)</text>
+                        <circle cx="100" cy="130" r="20" fill="rgba(99, 102, 241, 0.3)" stroke="#6366F1" stroke-width="2"/>
+                        <text x="86" y="134" fill="#A5B4FC" font-size="10">Base (2πr)</text>
+                    </svg>`;
+
+                case "revolution":
+                    return `<svg class="${baseClass}" viewBox="0 0 200 160">
+                        <line x1="100" y1="10" x2="100" y2="140" stroke="#94A3B8" stroke-width="2" stroke-dasharray="4"/>
+                        <path d="M 100 20 L 160 120 L 100 120 Z" fill="rgba(16, 185, 129, 0.25)" stroke="#10B981" stroke-width="3"/>
+                        <path d="M 160 120 A 60 15 0 0 1 40 120" stroke="#F59E0B" stroke-width="2" stroke-dasharray="3"/>
+                        <path d="M 40 120 A 60 15 0 0 1 160 120" stroke="#F59E0B" stroke-width="2"/>
+                        <text x="105" y="152" fill="#F59E0B" font-size="11" font-weight="bold">Eixo 360°</text>
+                    </svg>`;
+
+                case "cube":
+                    return `<svg class="${baseClass}" viewBox="0 0 200 160">
+                        <path d="M 50 50 L 110 50 L 110 110 L 50 110 Z" fill="rgba(99, 102, 241, 0.2)" stroke="#6366F1" stroke-width="3"/>
+                        <path d="M 90 20 L 150 20 L 150 80 L 90 80 Z" fill="rgba(99, 102, 241, 0.1)" stroke="#6366F1" stroke-width="2" stroke-dasharray="3"/>
+                        <line x1="50" y1="50" x2="90" y2="20" stroke="#6366F1" stroke-width="2"/>
+                        <line x1="110" y1="50" x2="150" y2="20" stroke="#6366F1" stroke-width="2"/>
+                        <line x1="110" y1="110" x2="150" y2="80" stroke="#6366F1" stroke-width="2"/>
+                        <line x1="50" y1="110" x2="90" y2="80" stroke="#6366F1" stroke-width="2" stroke-dasharray="3"/>
+                        <text x="15" y="85" fill="#A5B4FC" font-size="11" font-weight="bold">6 Faces</text>
+                    </svg>`;
+
+                case "cylinderTank":
+                    return `<svg class="${baseClass}" viewBox="0 0 200 170">
+                        <path d="M 50 50 L 50 130 A 50 15 0 0 0 150 130 L 150 50 Z" fill="rgba(56, 189, 248, 0.4)"/>
+                        <ellipse cx="100" cy="40" rx="50" ry="15" fill="rgba(30, 41, 59, 0.5)" stroke="#38BDF8" stroke-width="3"/>
+                        <line x1="50" y1="40" x2="50" y2="130" stroke="#38BDF8" stroke-width="3"/>
+                        <line x1="150" y1="40" x2="150" y2="130" stroke="#38BDF8" stroke-width="3"/>
+                        <ellipse cx="100" cy="130" rx="50" ry="15" fill="none" stroke="#38BDF8" stroke-width="3"/>
+                        <line x1="100" y1="40" x2="150" y2="40" stroke="#F59E0B" stroke-width="2"/>
+                        <text x="115" y="34" fill="#F59E0B" font-size="11" font-weight="bold">r = 1m</text>
+                        <line x1="165" y1="40" x2="165" y2="130" stroke="#F43F5E" stroke-width="2"/>
+                        <text x="170" y="90" fill="#F43F5E" font-size="11" font-weight="bold">h = 2m</text>
+                    </svg>`;
+
+                case "pyramid":
+                    return `<svg class="${baseClass}" viewBox="0 0 200 160">
+                        <polygon points="100,20 30,120 120,140" fill="rgba(245, 158, 11, 0.2)" stroke="#F59E0B" stroke-width="3"/>
+                        <polygon points="100,20 120,140 170,110" fill="rgba(245, 158, 11, 0.3)" stroke="#F59E0B" stroke-width="3"/>
+                        <line x1="30" y1="120" x2="80" y2="90" stroke="#F59E0B" stroke-width="2" stroke-dasharray="3"/>
+                        <line x1="170" y1="110" x2="80" y2="90" stroke="#F59E0B" stroke-width="2" stroke-dasharray="3"/>
+                        <line x1="100" y1="20" x2="100" y2="115" stroke="#EC4899" stroke-width="2" stroke-dasharray="4"/>
+                        <text x="105" y="70" fill="#EC4899" font-size="11" font-weight="bold">h = 5m</text>
+                        <text x="60" y="145" fill="#F59E0B" font-size="11" font-weight="bold">base a = 6m</text>
+                    </svg>`;
+
+                case "sphere":
+                    return `<svg class="${baseClass}" viewBox="0 0 200 160">
+                        <circle cx="100" cy="80" r="60" fill="url(#sphereGrad)" stroke="#818CF8" stroke-width="3"/>
+                        <ellipse cx="100" cy="80" rx="60" ry="18" fill="none" stroke="#A5B4FC" stroke-width="2" stroke-dasharray="4"/>
+                        <line x1="100" y1="80" x2="160" y2="80" stroke="#F43F5E" stroke-width="3"/>
+                        <circle cx="100" cy="80" r="4" fill="#F43F5E"/>
+                        <text x="115" y="75" fill="#F43F5E" font-size="12" font-weight="bold">r = 3 cm</text>
+                        <defs>
+                            <radialGradient id="sphereGrad" cx="30%" cy="30%" r="70%">
+                                <stop offset="0%" stop-color="#818CF8" stop-opacity="0.6"/>
+                                <stop offset="100%" stop-color="#1E1B4B" stop-opacity="0.95"/>
+                            </radialGradient>
+                        </defs>
+                    </svg>`;
+
+                case "coneHat":
+                    return `<svg class="${baseClass}" viewBox="0 0 200 160">
+                        <path d="M 100 20 L 40 130 A 60 18 0 0 0 160 130 Z" fill="rgba(236, 72, 153, 0.25)" stroke="#EC4899" stroke-width="3"/>
+                        <ellipse cx="100" cy="130" rx="60" ry="18" fill="none" stroke="#EC4899" stroke-width="2" stroke-dasharray="3"/>
+                        <line x1="100" y1="20" x2="160" y2="130" stroke="#F59E0B" stroke-width="3"/>
+                        <text x="135" y="70" fill="#F59E0B" font-size="11" font-weight="bold">g = 12cm</text>
+                        <line x1="100" y1="130" x2="160" y2="130" stroke="#38BDF8" stroke-width="2"/>
+                        <text x="115" y="145" fill="#38BDF8" font-size="11" font-weight="bold">r = 5cm</text>
+                    </svg>`;
+
+                case "prismBox":
+                    return `<svg class="${baseClass}" viewBox="0 0 200 160">
+                        <path d="M 30 70 L 130 70 L 170 40 L 70 40 Z" fill="rgba(56, 189, 248, 0.5)"/>
+                        <path d="M 30 70 L 130 70 L 130 130 L 30 130 Z" fill="rgba(56, 189, 248, 0.3)"/>
+                        <path d="M 30 50 L 130 50 L 130 130 L 30 130 Z" fill="none" stroke="#38BDF8" stroke-width="3"/>
+                        <path d="M 130 50 L 170 20 L 170 100 L 130 130 Z" fill="none" stroke="#38BDF8" stroke-width="3"/>
+                        <path d="M 30 50 L 70 20 L 170 20" fill="none" stroke="#38BDF8" stroke-width="3"/>
+                        <text x="65" y="148" fill="#F59E0B" font-size="11" font-weight="bold">2 m</text>
+                        <text x="145" y="125" fill="#F59E0B" font-size="11" font-weight="bold">1.5 m</text>
+                        <text x="10" y="90" fill="#EC4899" font-size="11" font-weight="bold">1 m</text>
+                    </svg>`;
+
+                case "scaleCube":
+                    return `<svg class="${baseClass}" viewBox="0 0 220 160">
+                        <g transform="translate(20, 70)">
+                            <rect x="0" y="0" width="30" height="40" fill="rgba(99, 102, 241, 0.4)" stroke="#6366F1" stroke-width="2"/>
+                            <text x="-5" y="-10" fill="#A5B4FC" font-size="10" font-weight="bold">Maquete (1:20)</text>
+                            <text x="2" y="25" fill="#FFF" font-size="9">500 mL</text>
+                        </g>
+                        <path d="M 70 90 L 100 90" stroke="#F59E0B" stroke-width="3" stroke-dasharray="2"/>
+                        <g transform="translate(110, 20)">
+                            <rect x="0" y="0" width="80" height="110" fill="rgba(16, 185, 129, 0.3)" stroke="#10B981" stroke-width="3"/>
+                            <text x="15" y="-8" fill="#34D399" font-size="11" font-weight="bold">REAL (k³)</text>
+                            <text x="15" y="60" fill="#FFF" font-size="12" font-weight="bold">V = ? Litros</text>
+                        </g>
+                    </svg>`;
+
+                case "displacement":
+                    return `<svg class="${baseClass}" viewBox="0 0 220 160">
+                        <rect x="30" y="30" width="130" height="100" fill="none" stroke="#38BDF8" stroke-width="3" rx="4"/>
+                        <rect x="33" y="70" width="124" height="57" fill="rgba(56, 189, 248, 0.3)"/>
+                        <rect x="33" y="55" width="124" height="15" fill="rgba(245, 158, 11, 0.4)" stroke="#F59E0B" stroke-width="1" stroke-dasharray="2"/>
+                        <path d="M 80 100 Q 95 85 110 105 Q 100 120 85 115 Z" fill="#64748B" stroke="#94A3B8" stroke-width="2"/>
+                        <text x="162" y="65" fill="#F59E0B" font-size="10" font-weight="bold">Δh = 3cm</text>
+                        <text x="55" y="145" fill="#38BDF8" font-size="10" font-weight="bold">Base: 40cm x 30cm</text>
+                    </svg>`;
+
+                case "frustum":
+                    return `<svg class="${baseClass}" viewBox="0 0 200 160">
+                        <path d="M 50 30 L 150 30 L 120 130 L 80 130 Z" fill="rgba(245, 158, 11, 0.2)" stroke="#F59E0B" stroke-width="3"/>
+                        <ellipse cx="100" cy="30" rx="50" ry="12" fill="rgba(245, 158, 11, 0.3)" stroke="#F59E0B" stroke-width="2"/>
+                        <ellipse cx="100" cy="130" rx="20" ry="6" fill="none" stroke="#F59E0B" stroke-width="2"/>
+                        <text x="100" y="24" fill="#F59E0B" font-size="10" font-weight="bold" text-anchor="middle">R = 5cm</text>
+                        <text x="100" y="145" fill="#F59E0B" font-size="10" font-weight="bold" text-anchor="middle">r = 3cm</text>
+                        <line x1="160" y1="30" x2="160" y2="130" stroke="#EC4899" stroke-width="2"/>
+                        <text x="165" y="85" fill="#EC4899" font-size="11" font-weight="bold">h = 9cm</text>
+                    </svg>`;
+
+                case "cylindersCompare":
+                    return `<svg class="${baseClass}" viewBox="0 0 220 160">
+                        <g transform="translate(20, 30)">
+                            <rect x="0" y="20" width="40" height="80" fill="rgba(99, 102, 241, 0.3)" stroke="#6366F1" stroke-width="2"/>
+                            <ellipse cx="20" cy="20" rx="20" ry="6" fill="#6366F1"/>
+                            <text x="0" y="-5" fill="#A5B4FC" font-size="10" font-weight="bold">Lata A (R, H)</text>
+                        </g>
+                        <g transform="translate(110, 70)">
+                            <rect x="0" y="10" width="80" height="40" fill="rgba(16, 185, 129, 0.3)" stroke="#10B981" stroke-width="2"/>
+                            <ellipse cx="40" cy="10" rx="40" ry="8" fill="#10B981"/>
+                            <text x="-5" y="-5" fill="#34D399" font-size="10" font-weight="bold">Lata B (2R, H/2)</text>
+                        </g>
+                    </svg>`;
+
+                case "silo":
+                    return `<svg class="${baseClass}" viewBox="0 0 200 170">
+                        <rect x="60" y="20" width="80" height="70" fill="rgba(99, 102, 241, 0.3)" stroke="#6366F1" stroke-width="3"/>
+                        <ellipse cx="100" cy="20" rx="40" ry="10" fill="none" stroke="#6366F1" stroke-width="2"/>
+                        <text x="68" y="60" fill="#FFF" font-size="10" font-weight="bold">Cilindro: 60m³</text>
+                        <path d="M 60 90 L 140 90 L 100 150 Z" fill="rgba(245, 158, 11, 0.3)" stroke="#F59E0B" stroke-width="3"/>
+                        <text x="82" y="115" fill="#F59E0B" font-size="10" font-weight="bold">Cone (? m³)</text>
+                    </svg>`;
+
+                default:
+                    return `<div class="w-full h-40 bg-slate-800 rounded-xl flex items-center justify-center text-slate-500 font-bold">Figura Geométrica</div>`;
+            }
+        }
+
+        /* ==========================================================================
+           5. RENDEREIZAÇÃO DE TELAS (START, GAMEPLAY, RESULTS)
+           ========================================================================== */
+        function initApp() {
+            renderStartScreen();
+        }
+
+        function renderStartScreen() {
+            const container = document.getElementById('appContainer');
+            container.innerHTML = `
+                <div class="max-w-2xl mx-auto w-full glass-card rounded-3xl p-6 sm:p-10 text-center space-y-6 shadow-2xl border border-slate-700/60 relative overflow-hidden my-4">
+                    <div class="absolute -top-16 -right-16 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                    
+                    <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs sm:text-sm font-bold">
+                        <span>👩‍🏫 Revisão Intensiva ENEM • 3ª Série EM</span>
+                    </div>
+
+                    <h2 class="font-display font-black text-3xl sm:text-4xl text-white tracking-tight leading-tight">
+                        Desafio ENEM de <span class="bg-clip-text text-transparent bg-gradient-to-r from-amber-400 via-yellow-300 to-emerald-400">Geometria Espacial</span>
+                    </h2>
+
+                    <!-- Avatar didático da Profe -->
+                    <div class="flex items-center gap-4 bg-slate-900/80 p-4 rounded-2xl border border-slate-800 text-left">
+                        <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-400 to-orange-500 flex items-center justify-center text-3xl shrink-0 shadow-md">
+                            👩‍🏫
+                        </div>
+                        <div class="text-xs sm:text-sm text-slate-300 space-y-1">
+                            <p class="font-bold text-slate-100">"Fala, fera da 3ª série! Preparado para gabaritar Geometria no ENEM?"</p>
+                            <p class="text-slate-400">Montei este simulado interativo com 15 questões reais em 3 fases progressivas para testar suas habilidades.</p>
+                        </div>
+                    </div>
+
+                    <!-- Cards descritivos das 3 Fases -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-left">
+                        <div class="p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-1">
+                            <span class="text-xs font-bold text-blue-400">FASE 1</span>
+                            <h4 class="font-bold text-sm text-slate-200">Visão Espacial & Euler</h4>
+                            <p class="text-[11px] text-slate-400">Vistas ortogonais, planificação e fórmula V - A + F = 2.</p>
+                        </div>
+                        <div class="p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-1">
+                            <span class="text-xs font-bold text-amber-400">FASE 2</span>
+                            <h4 class="font-bold text-sm text-slate-200">Áreas, Volumes & Litros</h4>
+                            <p class="text-[11px] text-slate-400">Prismas, cilindros, cones, esferas e 1 m³ = 1000L.</p>
+                        </div>
+                        <div class="p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-1">
+                            <span class="text-xs font-bold text-emerald-400">FASE 3</span>
+                            <h4 class="font-bold text-sm text-slate-200">Desafios do ENEM</h4>
+                            <p class="text-[11px] text-slate-400">Escala k³, deslocamento de fluidos e embalagens.</p>
+                        </div>
+                    </div>
+
+                    <!-- Botão Iniciar -->
+                    <button onclick="startGame()" class="w-full py-5 rounded-2xl font-display font-black text-lg sm:text-xl text-slate-950 bg-gradient-to-r from-amber-400 via-yellow-300 to-emerald-400 hover:brightness-110 shadow-xl shadow-amber-500/20 transform hover:-translate-y-1 transition-all flex items-center justify-center gap-3">
+                        <span>INICIAR DESAFIO COMPLETO</span>
+                        <svg class="w-6 h-6 stroke-slate-950 stroke-[3]" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 5l7 7-7 7M5 12h15"/></svg>
+                    </button>
+                </div>
+            `;
+        }
+
+        function startGame() {
+            state.currentPhaseIdx = 0;
+            state.currentQuestionIdx = 0;
+            state.score = 0;
+            state.streak = 0;
+            state.correctCount = 0;
+            state.wrongCount = 0;
+            state.answersHistory = [];
+            
+            updateHeaderCounters();
+            renderQuestion();
+        }
+
+        function updateHeaderCounters() {
+            document.getElementById('globalScore').innerText = state.score;
+            document.getElementById('globalStreak').innerText = `🔥 ${state.streak}`;
+        }
+
+        function renderQuestion() {
+            const currentPhase = gameData.phases[state.currentPhaseIdx];
+            const q = currentPhase.questions[state.currentQuestionIdx];
+            const totalQuestionsInPhase = currentPhase.questions.length;
+            const globalQNum = (state.currentPhaseIdx * 5) + state.currentQuestionIdx + 1;
+
+            const container = document.getElementById('appContainer');
+            container.innerHTML = `
+                <div class="space-y-4 my-2">
+                    <!-- Barra de Progresso da Fase -->
+                    <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg">
+                        <div class="flex items-center gap-3 w-full sm:w-auto">
+                            <span class="px-3 py-1 rounded-lg text-xs font-black uppercase text-slate-950 bg-gradient-to-r ${currentPhase.badgeColor}">
+                                ${currentPhase.title.split(':')[0]}
+                            </span>
+                            <span class="text-xs text-slate-300 font-semibold">Questão ${globalQNum} de 15</span>
+                        </div>
+                        <div class="w-full sm:w-64 bg-slate-800 h-3 rounded-full overflow-hidden p-0.5 border border-slate-700">
+                            <div class="bg-gradient-to-r ${currentPhase.badgeColor} h-full rounded-full transition-all duration-300" style="width: ${((state.currentQuestionIdx + 1) / totalQuestionsInPhase) * 100}%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Card principal da questão -->
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                        
+                        <!-- Coluna da Esquerda: Enunciado e Gráfico 3D -->
+                        <div class="lg:col-span-6 glass-card rounded-3xl p-5 sm:p-6 space-y-4 border border-slate-800">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-indigo-400 uppercase tracking-wider bg-indigo-500/10 px-2.5 py-1 rounded-md border border-indigo-500/20">
+                                    📌 ${q.category}
+                                </span>
+                                <button onclick="openHintModal()" class="text-xs font-bold text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 px-3 py-1.5 rounded-xl border border-amber-500/30 transition-all flex items-center gap-1.5">
+                                    <span>💡 Dica da Profe</span>
+                                </button>
+                            </div>
+
+                            <h3 class="font-sans font-bold text-base sm:text-lg text-slate-100 leading-snug">
+                                ${q.question}
+                            </h3>
+
+                            <!-- Ilustração Vetorial 3D -->
+                            <div class="bg-slate-950/80 rounded-2xl p-4 border border-slate-800 flex items-center justify-center relative">
+                                ${getSVGGraphic(q.svgType)}
+                            </div>
+                        </div>
+
+                        <!-- Coluna da Direita: Botões GRANDES de Resposta -->
+                        <div class="lg:col-span-6 space-y-3">
+                            <span class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Escolha a alternativa correta:</span>
+                            
+                            ${q.options.map((opt, idx) => {
+                                const letters = ['A', 'B', 'C', 'D'];
+                                return `
+                                    <button onclick="checkAnswer(${idx})" class="btn-option w-full p-4 rounded-2xl bg-slate-900 hover:bg-slate-800 border-2 border-slate-800 hover:border-indigo-500/70 text-left flex items-center gap-4 group transition-all">
+                                        <span class="w-10 h-10 rounded-xl bg-slate-800 group-hover:bg-indigo-600 group-hover:text-white font-display font-black text-slate-300 text-base flex items-center justify-center shrink-0 border border-slate-700 transition-colors">
+                                            ${letters[idx]}
+                                        </span>
+                                        <span class="font-semibold text-slate-200 group-hover:text-white text-sm sm:text-base leading-snug">
+                                            ${opt}
+                                        </span>
+                                    </button>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        /* ==========================================================================
+           6. LÓGICA DE RESPOSTA E FEEDBACK DIDÁTICO
+           ========================================================================== */
+        function checkAnswer(selectedIdx) {
+            const currentPhase = gameData.phases[state.currentPhaseIdx];
+            const q = currentPhase.questions[state.currentQuestionIdx];
+            const isCorrect = (selectedIdx === q.correct);
+
+            if (isCorrect) {
+                audio.playCorrect();
+                state.score += 100 + (state.streak * 25);
+                state.streak++;
+                state.correctCount++;
+            } else {
+                audio.playIncorrect();
+                state.streak = 0;
+                state.wrongCount++;
+            }
+
+            // Registrar histórico para a revisão final
+            state.answersHistory.push({
+                question: q.question,
+                category: q.category,
+                userAnswer: q.options[selectedIdx],
+                correctAnswer: q.options[q.correct],
+                isCorrect: isCorrect,
+                explanation: q.explanation
+            });
+
+            updateHeaderCounters();
+            showFeedbackModal(isCorrect, q);
+        }
+
+        function showFeedbackModal(isCorrect, questionObj) {
+            const modal = document.getElementById('feedbackModal');
+            const header = document.getElementById('feedbackHeader');
+            const body = document.getElementById('feedbackBody');
+
+            if (isCorrect) {
+                header.innerHTML = `
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-2xl font-bold">✓</div>
+                    <div>
+                        <h4 class="font-display font-extrabold text-xl text-emerald-400">Excelente! Resposta Correta! 🎉</h4>
+                        <p class="text-xs text-slate-400">+${100 + ((state.streak - 1) * 25)} pontos (Combo 🔥 ${state.streak})</p>
+                    </div>
+                `;
+            } else {
+                header.innerHTML = `
+                    <div class="w-12 h-12 rounded-2xl bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center justify-center text-2xl font-bold">✕</div>
+                    <div>
+                        <h4 class="font-display font-extrabold text-xl text-rose-400">Atenção! Resposta Incorreta 💡</h4>
+                        <p class="text-xs text-slate-400">Veja a resolução passo a passo da Profe abaixo:</p>
+                    </div>
+                `;
+            }
+
+            body.innerHTML = questionObj.explanation;
+            modal.classList.remove('hidden');
+        }
+
+        function nextQuestion() {
+            document.getElementById('feedbackModal').classList.add('hidden');
+
+            const currentPhase = gameData.phases[state.currentPhaseIdx];
+            state.currentQuestionIdx++;
+
+            // Se terminou as questões da fase atual
+            if (state.currentQuestionIdx >= currentPhase.questions.length) {
+                state.currentPhaseIdx++;
+                state.currentQuestionIdx = 0;
+
+                // Se completou as 3 fases -> Mostrar Tela Final de Resultados
+                if (state.currentPhaseIdx >= gameData.phases.length) {
+                    renderFinalResults();
+                    return;
+                }
+            }
+
+            renderQuestion();
+        }
+
+        function openHintModal() {
+            const q = gameData.phases[state.currentPhaseIdx].questions[state.currentQuestionIdx];
+            document.getElementById('hintContent').innerHTML = q.hint;
+            document.getElementById('hintModal').classList.remove('hidden');
+        }
+
+        function closeHintModal() {
+            document.getElementById('hintModal').classList.add('hidden');
+        }
+
+        /* ==========================================================================
+           7. TELA FINAL COM ANIMAÇÃO DE ESTRELAS, CELEBRAÇÃO E RELATÓRIO COMPLETO
+           ========================================================================== */
+        function renderFinalResults() {
+            audio.playVictory();
+            launchConfetti();
+
+            const total = 15;
+            const percentage = Math.round((state.correctCount / total) * 100);
+
+            // Regra do Sistema de Estrelas:
+            // < 60% = 1 Estrela
+            // 60% - 89% = 2 Estrelas
+            // >= 90% = 3 Estrelas
+            let starsCount = 1;
+            let starsMsg = "Você concluiu a revisão! Continue praticando os conceitos de volume e projeções ortogonais.";
+            let teacherBadge = "Aprendiz de Geometria";
+
+            if (percentage >= 90) {
+                starsCount = 3;
+                starsMsg = "SENSACIONAL! Você dominou todos os conceitos e está pronto para gabaritar a prova de Matemática no ENEM!";
+                teacherBadge = "Mestre da Geometria ENEM 🏆";
+            } else if (percentage >= 60) {
+                starsCount = 2;
+                starsMsg = "MUITO BEM! Demonstrou ótimo conhecimento em fórmulas. Revise apenas conversão de escala k³ e volume de truncados.";
+                teacherBadge = "Candidato de Alto Nível 🚀";
+            }
+
+            // Gerar HTML dinâmico das 3 estrelas com animação
+            let starsHTML = '';
+            for (let i = 1; i <= 3; i++) {
+                if (i <= starsCount) {
+                    starsHTML += `<span class="text-5xl sm:text-6xl text-amber-400 animate-star-pop drop-shadow-[0_0_20px_rgba(251,191,36,0.7)]" style="animation-delay: ${i * 0.25}s">★</span>`;
+                } else {
+                    starsHTML += `<span class="text-5xl sm:text-6xl text-slate-700">★</span>`;
+                }
+            }
+
+            const container = document.getElementById('appContainer');
+            container.innerHTML = `
+                <div class="max-w-3xl mx-auto w-full glass-card rounded-3xl p-6 sm:p-10 text-center space-y-6 shadow-2xl border border-slate-700/80 my-4">
+                    
+                    <div class="space-y-2">
+                        <span class="px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-bold uppercase tracking-widest">
+                            ${teacherBadge}
+                        </span>
+                        <h2 class="font-display font-black text-3xl sm:text-4xl text-white">Resultado do Desafio</h2>
+                    </div>
+
+                    <!-- Estrelas Animadas -->
+                    <div class="flex items-center justify-center gap-4 py-2">
+                        ${starsHTML}
+                    </div>
+
+                    <div class="bg-slate-900/90 p-4 rounded-2xl border border-slate-800 max-w-xl mx-auto">
+                        <p class="text-slate-200 font-semibold text-sm sm:text-base leading-relaxed">
+                            "${starsMsg}"
+                        </p>
+                        <p class="text-xs text-amber-400 font-bold mt-2">— Profe de Matemática</p>
+                    </div>
+
+                    <!-- Estatísticas em Quadrantes -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div class="bg-slate-900/90 p-4 rounded-2xl border border-slate-800">
+                            <span class="block text-[10px] text-slate-400 uppercase font-bold">Aproveitamento</span>
+                            <span class="font-display font-black text-2xl text-emerald-400">${percentage}%</span>
+                        </div>
+                        <div class="bg-slate-900/90 p-4 rounded-2xl border border-slate-800">
+                            <span class="block text-[10px] text-slate-400 uppercase font-bold">Acertos</span>
+                            <span class="font-display font-black text-2xl text-slate-100">${state.correctCount} / 15</span>
+                        </div>
+                        <div class="bg-slate-900/90 p-4 rounded-2xl border border-slate-800">
+                            <span class="block text-[10px] text-slate-400 uppercase font-bold">Pontuação</span>
+                            <span class="font-display font-black text-2xl text-amber-400">${state.score}</span>
+                        </div>
+                        <div class="bg-slate-900/90 p-4 rounded-2xl border border-slate-800">
+                            <span class="block text-[10px] text-slate-400 uppercase font-bold">Maior Combo</span>
+                            <span class="font-display font-black text-2xl text-indigo-400">🔥 ${state.streak}</span>
+                        </div>
+                    </div>
+
+                    <!-- Relatório Completo / Gabarito Comentado -->
+                    <div class="text-left space-y-3 pt-4 border-t border-slate-800">
+                        <div class="flex items-center justify-between">
+                            <h4 class="font-display font-bold text-base text-slate-200">📋 Gabarito Comentado para Revisão:</h4>
+                            <span class="text-xs text-slate-400">15 Questões</span>
+                        </div>
+                        <div class="max-h-64 overflow-y-auto space-y-2.5 pr-2">
+                            ${state.answersHistory.map((item, idx) => `
+                                <div class="p-3.5 rounded-2xl bg-slate-950/70 border ${item.isCorrect ? 'border-emerald-500/30' : 'border-rose-500/30'} text-xs space-y-1.5">
+                                    <div class="flex items-center justify-between font-bold">
+                                        <span class="${item.isCorrect ? 'text-emerald-400' : 'text-rose-400'}">
+                                            Questão ${idx + 1} [${item.category}] — ${item.isCorrect ? 'Acertou ✓' : 'Errou ✕'}
+                                        </span>
+                                    </div>
+                                    <p class="text-slate-300 font-medium">${item.question}</p>
+                                    <div class="text-slate-400 space-y-0.5">
+                                        <p>• <b>Sua opção:</b> ${item.userAnswer}</p>
+                                        <p>• <b>Opção correta:</b> ${item.correctAnswer}</p>
+                                    </div>
+                                    <div class="bg-slate-900 p-2.5 rounded-xl border border-slate-800 text-slate-300">
+                                        ${item.explanation}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <!-- Botão Tentar Novamente -->
+                    <button onclick="startGame()" class="w-full py-4 rounded-2xl font-display font-black text-lg text-slate-950 bg-gradient-to-r from-amber-400 via-yellow-300 to-emerald-400 hover:brightness-110 shadow-xl shadow-amber-500/20 transition-all flex items-center justify-center gap-2">
+                        <span>JOGAR NOVAMENTE E REVISAR</span>
+                        <svg class="w-5 h-5 stroke-slate-950 stroke-[3]" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                    </button>
+                </div>
+            `;
+        }
+
+        /* ==========================================================================
+           8. EFEITO DE CONFETES EM CANVAS
+           ========================================================================== */
+        function launchConfetti() {
+            const canvas = document.getElementById('confettiCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            const particles = [];
+            const colors = ['#6366F1', '#10B981', '#F59E0B', '#EC4899', '#38BDF8'];
+
+            for (let i = 0; i < 140; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height - canvas.height,
+                    size: Math.random() * 8 + 4,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    vy: Math.random() * 3.5 + 2,
+                    vx: Math.random() * 2 - 1,
+                    rotation: Math.random() * 360,
+                    rotSpeed: Math.random() * 6 - 3
+                });
+            }
+
+            let animationFrame;
+            function render() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                let alive = false;
+
+                particles.forEach(p => {
+                    p.y += p.vy;
+                    p.x += p.vx;
+                    p.rotation += p.rotSpeed;
+
+                    if (p.y < canvas.height) alive = true;
+
+                    ctx.save();
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate((p.rotation * Math.PI) / 180);
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+                    ctx.restore();
+                });
+
+                if (alive) {
+                    animationFrame = requestAnimationFrame(render);
+                } else {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                }
+            }
+
+            render();
+        }
+
+        // Inicializar aplicação
+        window.onload = function() {
+            initApp();
+        };
+
+        // Redimensionar canvas de confetes
+        window.onresize = function() {
+            const canvas = document.getElementById('confettiCanvas');
+            if (canvas) {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+        };
+    </script>
+</body>
+</html>
